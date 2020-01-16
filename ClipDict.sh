@@ -55,16 +55,25 @@ shift $((OPTIND - 1))
 main() {
   oldWord=""
   echo -e "ClipDict is on. Copy or select a word and get it translated.\n"
-  echo $oldWord | xclip
-  echo $oldWord | xclip -sel clip
+  echo $oldWord | xclip           # ehco to clipboard
+  echo $oldWord | xclip -sel clip # echo to selection
   while true; do
     sleep 1
+    # Get contents from clipboard
     if [[ -n $MODE ]] && [[ $MODE == "copy" ]]; then
+      xclip -o -sel clip > /dev/null 2>&1 # To avoid a bug of FireFox clearing clipboard when quitting
+      if [[ $? != 0 ]]; then
+        echo "" | xclip -sel clip
+      fi
       RES=$(xclip -o -sel clip | sed -e 's/[^[:alpha:]]//g')
     elif [[ -n $MODE ]] && [[ $MODE == "select" ]]; then
+      xclip -o > /dev/null 2>&1 # To avoid a bug of FireFox clearing clipboard when quitting
+      if [[ $? != 0 ]]; then
+        echo "" | xclip
+      fi
       RES=$(xclip -o | sed -e 's/[^[:alpha:]]//g')
     fi
-
+    # Feed to dict
     if [[ -n $RES ]] && [[ $RES != $oldWord ]] && [[ $NOTIFY == false ]]; then
       echo $RES | xargs dict
       oldWord=$RES
@@ -76,12 +85,12 @@ main() {
 }
 
 if [[ -z $(command -v xclip) ]]; then
-  echo "[-] Install xclip first\n"
+  echo "[-] FATAL: Install xclip first!"
   exit 1
 fi
 
 if [[ -z $(command -v dict) ]]; then
-  echo "[-] Install dict first\n"
+  echo "[-] FATAL: Install dict first!"
   exit 1
 fi
 
